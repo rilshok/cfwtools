@@ -1,4 +1,5 @@
-from typing import Any, Protocol, Iterator, Self
+from typing import Any, Iterator, Protocol, Self
+
 from jinja2 import Template
 
 

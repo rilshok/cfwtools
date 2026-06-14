@@ -1,6 +1,8 @@
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 from workers import DurableObject as _DurableObject
+
 from cfwtools.sql import Sql
 
 if TYPE_CHECKING:

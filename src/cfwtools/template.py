@@ -1,5 +1,6 @@
-from jinja2 import Template, Environment, StrictUndefined, Undefined
 from typing import Any
+
+from jinja2 import Environment, StrictUndefined, Template, Undefined
 
 JINJA_ENV = Environment(undefined=StrictUndefined)
 
