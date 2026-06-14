@@ -1,14 +1,17 @@
 [project]
 name = "cfwtools"
-version = "0.1.1"
+version = "0.1.2"
 description = "Cloudflare's Python Worker Development Tools"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "workers-py>=1.9.5",
     "jinja2",
 ]
 
+[dependency-groups]
+dev = [
+    "workers-py>=1.9.5",
+]
 
 [build-system]
 requires = ["uv_build>=0.10.10,<0.11.0"]
