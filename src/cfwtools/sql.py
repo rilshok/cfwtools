@@ -1,3 +1,7 @@
+__all__ = [
+    "Sql",
+]
+
 from collections.abc import Iterator
 from typing import Protocol, Self
 

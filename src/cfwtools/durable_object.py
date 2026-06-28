@@ -1,3 +1,11 @@
+__all__ = [
+    "Default",
+    "DurableObject",
+    "Variable",
+    "Variables",
+    "do",
+]
+
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Mapping
 from functools import cached_property
@@ -162,14 +170,13 @@ class Variables(Mapping[type[Variable[Any]], Any]):
 
 
 class DurableObject(_DurableObject):
-    """Durable Object with optional built-in variable management in SQLite.
+    """Durable Object with built-in variable management in SQLite.
 
     Supports storage of variables (API keys, tokens, etc.) with validation.
     Use by passing variables=[VarClass1, VarClass2] to the class.
 
     Attributes:
         variable_types: Registered variable types (set via __init_subclass__)
-        variables: _Variables instance or None if not configured
     """
 
     variable_types: list[type[Variable[Any]]]
@@ -184,9 +191,7 @@ class DurableObject(_DurableObject):
         cls.variable_types = variables or []
 
     def __init__(self, ctx, env) -> None:
-        self.variables: _Variables | None = None
-        if self.variable_types:
-            self.variables = _Variables(Sql(ctx.storage.sql), *self.variable_types)
+        self.variables = _Variables(Sql(ctx.storage.sql), *self.variable_types)
         super().__init__(ctx, env)
         self.__post_init__()
 
@@ -206,11 +211,8 @@ class DurableObject(_DurableObject):
 
         Returns:
             Dictionary mapping variable names (lowercase class names) to their
-            raw string values. Returns empty dict if variables are not configured.
-            Example: {"apikey": "variable_value", ...}
+            raw string values. Example: {"apikey": "variable_value", ...}
         """
-        if self.variables is None:
-            return {}
         return self.variables.to_dict()
 
     async def change_variable(self, key: str, value: str) -> str:
@@ -224,8 +226,6 @@ class DurableObject(_DurableObject):
             Empty string on success, error message on failure.
             Validation errors from the Variable class are included.
         """
-        if self.variables is None:
-            return "Variables are not configured for this Durable Object"
         try:
             variable_cls = self.variables.from_key(key)
             self.variables[variable_cls] = value
