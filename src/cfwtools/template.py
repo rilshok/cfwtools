@@ -4,7 +4,7 @@ __all__ = [
 
 from jinja2 import Environment, StrictUndefined, Template, Undefined
 
-JINJA_ENV = Environment(undefined=StrictUndefined, autoescape=True)
+JINJA_ENV = Environment(undefined=StrictUndefined, autoescape=False)  # noqa: S701
 
 
 def _safe_repr(value: object) -> str | Undefined:
