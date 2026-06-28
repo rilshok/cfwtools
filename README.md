@@ -5,4 +5,4 @@ Cloudflare's Python Worker Development Tools - A collection of utilities for bui
 ## Features
 
 - Safe SQLite query templating with Jinja2
-- Secure storage of DO secrets with validation
+- Storage of DO variables with validation
