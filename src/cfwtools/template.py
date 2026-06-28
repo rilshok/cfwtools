@@ -1,16 +1,14 @@
-from typing import Any
-
 from jinja2 import Environment, StrictUndefined, Template, Undefined
 
-JINJA_ENV = Environment(undefined=StrictUndefined)
+JINJA_ENV = Environment(undefined=StrictUndefined, autoescape=True)
 
 
-def _safe_repr(value: Any) -> str | Undefined:
+def _safe_repr(value: object) -> str | Undefined:
     """Safely represent a value, preserving Undefined objects without conversion."""
     return value if isinstance(value, Undefined) else repr(value)
 
 
-JINJA_ENV.filters["r"] = _safe_repr
+JINJA_ENV.filters["r"] = _safe_repr  # pyright: ignore[reportUnknownMemberType]
 
 
 def template(source: str) -> Template:
