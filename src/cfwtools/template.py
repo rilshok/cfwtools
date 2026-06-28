@@ -1,3 +1,7 @@
+__all__ = [
+    "template",
+]
+
 from jinja2 import Environment, StrictUndefined, Template, Undefined
 
 JINJA_ENV = Environment(undefined=StrictUndefined, autoescape=True)
