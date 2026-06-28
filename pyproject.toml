@@ -21,5 +21,13 @@ build-backend = "uv_build"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+    "ANN001",
     "D",
 ]
+
+[tool.pyright]
+typeCheckingMode="strict"
+reportUnknownParameterType=false
+reportMissingParameterType=false
+reportUnknownArgumentType=false
+reportUnknownMemberType=false

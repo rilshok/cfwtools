@@ -6,8 +6,8 @@ from cfwtools.sql import Sql
 
 
 class DurableObject(_DurableObject):
-    def __init__(self, ctx, env) -> None:  # pyright: ignore[reportMissingParameterType, reportUnknownParameterType] # noqa: ANN001
-        super().__init__(ctx, env)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+    def __init__(self, ctx, env) -> None:
+        super().__init__(ctx, env)
         self.__post_init__()
 
     @cached_property
