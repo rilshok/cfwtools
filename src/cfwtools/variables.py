@@ -212,7 +212,9 @@ class DurableObjectWithVariables(DurableObject):
         cls.variable_types = variables or []
 
     def __init__(self, ctx, env) -> None:
-        self.variables = _Variables(Sql(ctx.storage.sql), *self.variable_types)
+        self.variables: _Variables | None = None
+        if self.variable_types:
+            self.variables = _Variables(Sql(ctx.storage.sql), *self.variable_types)
         super().__init__(ctx, env)
 
     async def get_variables(self) -> dict[str, str]:
@@ -220,8 +222,11 @@ class DurableObjectWithVariables(DurableObject):
 
         Returns:
             Dictionary mapping variable names (lowercase class names) to their
-            raw string values. Example: {"apikey": "variable_value", ...}
+            raw string values. Returns empty dict if variables are not configured.
+            Example: {"apikey": "variable_value", ...}
         """
+        if self.variables is None:
+            return {}
         return self.variables.to_dict()
 
     async def change_variable(self, key: str, value: str) -> str:
@@ -235,6 +240,8 @@ class DurableObjectWithVariables(DurableObject):
             Empty string on success, error message on failure.
             Validation errors from the Variable class are included.
         """
+        if self.variables is None:
+            return "Variables are not configured for this Durable Object"
         try:
             variable_cls = self.variables.from_key(key)
             self.variables[variable_cls] = value
