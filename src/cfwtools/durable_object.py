@@ -1,17 +1,13 @@
 from functools import cached_property
-from typing import TYPE_CHECKING
 
 from workers import DurableObject as _DurableObject
 
 from cfwtools.sql import Sql
 
-if TYPE_CHECKING:
-    from js import DurableObjectState, Env
-
 
 class DurableObject(_DurableObject):
-    def __init__(self, ctx: "DurableObjectState", env: "Env") -> None:
-        super().__init__(ctx, env)
+    def __init__(self, ctx, env) -> None:  # pyright: ignore[reportMissingParameterType, reportUnknownParameterType] # noqa: ANN001
+        super().__init__(ctx, env)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
         self.__post_init__()
 
     @cached_property
