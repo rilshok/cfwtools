@@ -1,13 +1,13 @@
 __all__ = [
     "DurableObject",
-    "DurableObjectWithSecrets",
-    "Secret",
+    "DurableObjectWithVariables",
     "Sql",
+    "Variable",
     "do",
     "template",
 ]
 
 from .durable_object import DurableObject, do
-from .secrets import DurableObjectWithSecrets, Secret
 from .sql import Sql
 from .template import template
+from .variables import DurableObjectWithVariables, Variable
