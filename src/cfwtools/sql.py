@@ -3,6 +3,8 @@ from typing import Protocol, Self
 
 from jinja2 import Template
 
+from cfwtools._utils import to_py
+
 
 class _CursorRow(Protocol):
     def to_py(self) -> dict[str, str]: ...
@@ -24,13 +26,11 @@ class Cursor:
         return self
 
     def __next__(self) -> dict[str, str]:
-        data: dict[str, str] | _CursorRow = next(self._iter)
-        if (to_py := getattr(data, "to_py", None)) is not None:
-            data = to_py()
+        data = to_py(next(self._iter))
         if not isinstance(data, dict):
             msg = f"Cursor row data must be a dict, got {type(data).__name__}"
             raise TypeError(msg)
-        return data
+        return data  # pyright: ignore[reportUnknownVariableType]
 
 
 class Sql:
