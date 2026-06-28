@@ -1,4 +1,5 @@
-from typing import Any, Iterator, Protocol, Self
+from collections.abc import Iterator
+from typing import Protocol, Self
 
 from jinja2 import Template
 
@@ -12,7 +13,7 @@ class _CursorIterable(Protocol):
 
 
 class _SqlStorage(Protocol):
-    def exec(self, query: str, /, *bindings: Any) -> _CursorIterable: ...
+    def exec(self, query: str, /, *bindings: object) -> _CursorIterable: ...
 
 
 class Cursor:
@@ -23,14 +24,20 @@ class Cursor:
         return self
 
     def __next__(self) -> dict[str, str]:
-        return next(self._iter).to_py()
+        data: dict[str, str] | _CursorRow = next(self._iter)
+        if (to_py := getattr(data, "to_py", None)) is not None:
+            data = to_py()
+        if not isinstance(data, dict):
+            msg = f"Cursor row data must be a dict, got {type(data).__name__}"
+            raise TypeError(msg)
+        return data
 
 
 class Sql:
     def __init__(self, sql: _SqlStorage) -> None:
         self._sql = sql
 
-    def __call__(self, query: str | Template, /, **values: Any) -> Cursor:
+    def __call__(self, query: str | Template, /, **values: object) -> Cursor:
         if isinstance(query, Template):
             query = query.render(**values)
         return Cursor(self._sql.exec(query))
