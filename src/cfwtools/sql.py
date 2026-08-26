@@ -1,5 +1,6 @@
 __all__ = [
     "Sql",
+    "SqlStorage",
 ]
 
 from collections.abc import Iterator
@@ -18,7 +19,7 @@ class _CursorIterable(Protocol):
     def __iter__(self) -> Iterator[_CursorRow]: ...
 
 
-class _SqlStorage(Protocol):
+class SqlStorage(Protocol):
     def exec(self, query: str, /, *bindings: object) -> _CursorIterable: ...
 
 
@@ -38,7 +39,7 @@ class Cursor:
 
 
 class Sql:
-    def __init__(self, sql: _SqlStorage) -> None:
+    def __init__(self, sql: SqlStorage) -> None:
         self._sql = sql
 
     def __call__(self, query: str | Template, /, **values: object) -> Cursor:
