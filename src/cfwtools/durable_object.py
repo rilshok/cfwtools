@@ -4,19 +4,31 @@ __all__ = [
     "Variable",
     "Variables",
     "do",
+    "transactional",
 ]
 
+import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Mapping
-from functools import cached_property
-from typing import Any
+from functools import cached_property, wraps
+from typing import Any, Concatenate, Protocol
 
 from workers import DurableObject as _DurableObject
 from workers import env
 
 from cfwtools._utils import to_py
-from cfwtools.sql import Sql
+from cfwtools.sql import Sql, SqlStorage
 from cfwtools.template import template
+
+
+class DurableObjectStorage(Protocol):
+    sql: SqlStorage
+
+    def transactionSync[Result](  # noqa: N802
+        self,
+        callback: Callable[[], Result],
+        /,
+    ) -> Result: ...
 
 
 class Default:
@@ -195,13 +207,17 @@ class DurableObject(_DurableObject):
         super().__init__(ctx, env)
         self.__post_init__()
 
+    @property
+    def storage(self) -> DurableObjectStorage:
+        return self.ctx.storage
+
     @cached_property
     def name(self) -> str:
         return self.ctx.id.name
 
     @cached_property
     def sql(self) -> Sql:
-        return Sql(self.ctx.storage.sql)
+        return Sql(self.storage.sql)
 
     def __post_init__(self) -> None:
         pass
@@ -233,6 +249,31 @@ class DurableObject(_DurableObject):
             return str(exc)
         else:
             return ""
+
+
+def transactional[
+    DO: DurableObject,
+    **P,
+    Result,
+](
+    operation: Callable[Concatenate[DO, P], Result],
+) -> Callable[Concatenate[DO, P], Result]:
+    """Run a synchronous durable object method in a storage transaction."""
+    if inspect.iscoroutinefunction(operation):
+        msg = "@transactional cannot be applied to an async function"
+        raise TypeError(msg)
+
+    @wraps(operation)
+    def wrapper(
+        self: DO,
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> Result:
+        return self.storage.transactionSync(
+            lambda: operation(self, *args, **kwargs),
+        )
+
+    return wrapper
 
 
 def _wrap_to_py_method(method: Callable[..., Any]) -> Callable[..., Any]:
