@@ -66,6 +66,8 @@ class Sql:
         /,
         **values: object,
     ) -> Cursor[object]:
-        if isinstance(query, Query | Template):
+        if isinstance(query, str) and values:
+            query = Query(query)
+        if not isinstance(query, str):
             query = query.render(**values)
         return Cursor(self._sql.exec(query))
