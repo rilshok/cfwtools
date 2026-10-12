@@ -1,12 +1,11 @@
 __all__ = [
-    "Cursor",
     "Query",
     "Sql",
     "SqlStorage",
 ]
 
 from collections.abc import Callable, Iterator
-from typing import Any, Final, Protocol, Self, overload
+from typing import Any, Final, Protocol, overload
 
 from jinja2 import Environment, StrictUndefined, Template, Undefined
 
@@ -61,7 +60,7 @@ class Query[RowT = dict[str, str]]:
         source: str,
         row_type: Callable[..., Any] = dict,
     ) -> None:
-        self.row_type: Final[Callable[..., RowT]] = row_type
+        self._row_type: Final[Callable[..., RowT]] = row_type
         self._query: Final[Template | str] = (
             JINJA_ENV.from_string(source)
             if any(marker in source for marker in _JINJA_MARKERS)
@@ -73,23 +72,19 @@ class Query[RowT = dict[str, str]]:
             return self._query
         return self._query.render(**values)
 
-
-class Cursor[RowT = dict[str, str]]:
-    def __init__(
+    def __call__(
         self,
-        cursor: _CursorIterable,
-        row_type: Callable[..., RowT],
-    ) -> None:
-        self._iter = iter(cursor)
-        self._row_type = row_type
+        execute: Callable[[str], _CursorIterable],
+        /,
+        **values: object,
+    ) -> Iterator[RowT]:
+        """Execute the rendered query and build a `row_type` object per row."""
+        return map(self._build_row, execute(self.render(**values)))
 
-    def __iter__(self) -> Self:
-        return self
-
-    def __next__(self) -> RowT:
-        data = to_py(next(self._iter))
+    def _build_row(self, row: _CursorRow) -> RowT:
+        data = to_py(row)
         if not isinstance(data, dict):
-            msg = f"Cursor row data must be a dict, got {type(data).__name__}"
+            msg = f"Row data must be a dict, got {type(data).__name__}"
             raise TypeError(msg)
         return self._row_type(**data)
 
@@ -104,7 +99,7 @@ class Sql:
         query: Query[RowT],
         /,
         **values: object,
-    ) -> Cursor[RowT]: ...
+    ) -> Iterator[RowT]: ...
 
     @overload
     def __call__(
@@ -112,17 +107,14 @@ class Sql:
         query: str,
         /,
         **values: object,
-    ) -> Cursor[dict[str, str]]: ...
+    ) -> Iterator[dict[str, str]]: ...
 
     def __call__(
         self,
         query: Query[object] | str,
         /,
         **values: object,
-    ) -> Cursor[object]:
+    ) -> Iterator[object]:
         if isinstance(query, str):
             query = Query(query)
-        return Cursor(
-            cursor=self._sql.exec(query.render(**values)),
-            row_type=query.row_type,
-        )
+        return query(self._sql.exec, **values)
