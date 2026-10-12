@@ -1,14 +1,16 @@
 __all__ = [
+    "Cursor",
     "Sql",
     "SqlStorage",
 ]
 
 from collections.abc import Iterator
-from typing import Protocol, Self
+from typing import Protocol, Self, cast, overload
 
 from jinja2 import Template
 
 from cfwtools._utils import to_py
+from cfwtools.template import Query
 
 
 class _CursorRow(Protocol):
@@ -23,26 +25,47 @@ class SqlStorage(Protocol):
     def exec(self, query: str, /, *bindings: object) -> _CursorIterable: ...
 
 
-class Cursor:
+class Cursor[RowT = dict[str, str]]:
     def __init__(self, cursor: _CursorIterable) -> None:
         self._iter = iter(cursor)
 
     def __iter__(self) -> Self:
         return self
 
-    def __next__(self) -> dict[str, str]:
+    def __next__(self) -> RowT:
         data = to_py(next(self._iter))
         if not isinstance(data, dict):
             msg = f"Cursor row data must be a dict, got {type(data).__name__}"
             raise TypeError(msg)
-        return data  # pyright: ignore[reportUnknownVariableType]
+        return cast("RowT", data)
 
 
 class Sql:
     def __init__(self, sql: SqlStorage) -> None:
         self._sql = sql
 
-    def __call__(self, query: str | Template, /, **values: object) -> Cursor:
-        if isinstance(query, Template):
+    @overload
+    def __call__[RowT](
+        self,
+        query: Query[RowT],
+        /,
+        **values: object,
+    ) -> Cursor[RowT]: ...
+
+    @overload
+    def __call__(
+        self,
+        query: str | Template,
+        /,
+        **values: object,
+    ) -> Cursor[dict[str, str]]: ...
+
+    def __call__(
+        self,
+        query: Query[object] | str | Template,
+        /,
+        **values: object,
+    ) -> Cursor[object]:
+        if isinstance(query, Query | Template):
             query = query.render(**values)
         return Cursor(self._sql.exec(query))
