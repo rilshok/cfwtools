@@ -8,7 +8,7 @@ __all__ = [
 from collections.abc import Callable, Iterator
 from typing import Any, Final, Protocol, Self, overload
 
-from jinja2 import Environment, StrictUndefined, Undefined
+from jinja2 import Environment, StrictUndefined, Template, Undefined
 
 from cfwtools._utils import to_py
 
@@ -21,6 +21,11 @@ def _safe_repr(value: object) -> str | Undefined:
 
 
 JINJA_ENV.filters["r"] = _safe_repr  # pyright: ignore[reportUnknownMemberType]
+_JINJA_MARKERS = (
+    JINJA_ENV.block_start_string,
+    JINJA_ENV.variable_start_string,
+    JINJA_ENV.comment_start_string,
+)
 
 
 class _CursorRow(Protocol):
@@ -56,11 +61,17 @@ class Query[RowT = dict[str, str]]:
         source: str,
         row_type: Callable[..., Any] = dict,
     ) -> None:
-        self._template = JINJA_ENV.from_string(source)
         self.row_type: Final[Callable[..., RowT]] = row_type
+        self._query: Final[Template | str] = (
+            JINJA_ENV.from_string(source)
+            if any(marker in source for marker in _JINJA_MARKERS)
+            else source
+        )
 
     def render(self, **values: object) -> str:
-        return self._template.render(**values)
+        if isinstance(self._query, str):
+            return self._query
+        return self._query.render(**values)
 
 
 class Cursor[RowT = dict[str, str]]:
@@ -109,14 +120,9 @@ class Sql:
         /,
         **values: object,
     ) -> Cursor[object]:
-        if isinstance(query, Query):
-            return Cursor(
-                cursor=self._sql.exec(query.render(**values)),
-                row_type=query.row_type,
-            )
-        if values:
-            query = Query(query).render(**values)
-        return Cursor[dict[str, str]](
-            cursor=self._sql.exec(query),
-            row_type=dict,
+        if isinstance(query, str):
+            query = Query(query)
+        return Cursor(
+            cursor=self._sql.exec(query.render(**values)),
+            row_type=query.row_type,
         )
