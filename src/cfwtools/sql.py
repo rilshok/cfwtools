@@ -1,14 +1,26 @@
 __all__ = [
     "Cursor",
+    "Query",
     "Sql",
     "SqlStorage",
 ]
 
 from collections.abc import Callable, Iterator
-from typing import Protocol, Self, overload
+from typing import Any, Final, Protocol, Self, overload
+
+from jinja2 import Environment, StrictUndefined, Undefined
 
 from cfwtools._utils import to_py
-from cfwtools.template import Query
+
+JINJA_ENV = Environment(undefined=StrictUndefined, autoescape=False)  # noqa: S701
+
+
+def _safe_repr(value: object) -> str | Undefined:
+    """Safely represent a value, preserving Undefined objects without conversion."""
+    return value if isinstance(value, Undefined) else repr(value)
+
+
+JINJA_ENV.filters["r"] = _safe_repr  # pyright: ignore[reportUnknownMemberType]
 
 
 class _CursorRow(Protocol):
@@ -21,6 +33,34 @@ class _CursorIterable(Protocol):
 
 class SqlStorage(Protocol):
     def exec(self, query: str, /, *bindings: object) -> _CursorIterable: ...
+
+
+class Query[RowT = dict[str, str]]:
+    """SQL Jinja2 template with the type its result rows are built into."""
+
+    @overload
+    def __init__(
+        self: "Query[dict[str, str]]",
+        source: str,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        source: str,
+        row_type: Callable[..., RowT],
+    ) -> None: ...
+
+    def __init__(
+        self,
+        source: str,
+        row_type: Callable[..., Any] = dict,
+    ) -> None:
+        self._template = JINJA_ENV.from_string(source)
+        self.row_type: Final[Callable[..., RowT]] = row_type
+
+    def render(self, **values: object) -> str:
+        return self._template.render(**values)
 
 
 class Cursor[RowT = dict[str, str]]:

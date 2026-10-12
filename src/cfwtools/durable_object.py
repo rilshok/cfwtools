@@ -17,8 +17,7 @@ from workers import DurableObject as _DurableObject
 from workers import env
 
 from cfwtools._utils import to_py
-from cfwtools.sql import Sql, SqlStorage
-from cfwtools.template import Query
+from cfwtools.sql import Query, Sql, SqlStorage
 
 
 class DurableObjectStorage(Protocol):

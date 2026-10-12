@@ -17,5 +17,4 @@ from .durable_object import (
     do,
     transactional,
 )
-from .sql import Sql
-from .template import Query
+from .sql import Query, Sql
