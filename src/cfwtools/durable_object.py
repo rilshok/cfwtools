@@ -77,9 +77,10 @@ class _VariableRow(TypedDict):
     value: str
 
 
-_SELECT_VARIABLES = Query[_VariableRow]("""
-SELECT key, value FROM __variables__
-""")
+_SELECT_VARIABLES = Query(
+    source="SELECT key, value FROM __variables__",
+    row_type=_VariableRow,
+)
 
 _UPDATE_VARIABLES = Query("""
 INSERT OR REPLACE INTO __variables__ (key, value)

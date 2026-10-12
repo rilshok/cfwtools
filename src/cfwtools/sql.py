@@ -4,8 +4,8 @@ __all__ = [
     "SqlStorage",
 ]
 
-from collections.abc import Iterator
-from typing import Protocol, Self, cast, overload
+from collections.abc import Callable, Iterator
+from typing import Protocol, Self, overload
 
 from cfwtools._utils import to_py
 from cfwtools.template import Query
@@ -24,8 +24,13 @@ class SqlStorage(Protocol):
 
 
 class Cursor[RowT = dict[str, str]]:
-    def __init__(self, cursor: _CursorIterable) -> None:
+    def __init__(
+        self,
+        cursor: _CursorIterable,
+        row_type: Callable[..., RowT],
+    ) -> None:
         self._iter = iter(cursor)
+        self._row_type = row_type
 
     def __iter__(self) -> Self:
         return self
@@ -35,7 +40,7 @@ class Cursor[RowT = dict[str, str]]:
         if not isinstance(data, dict):
             msg = f"Cursor row data must be a dict, got {type(data).__name__}"
             raise TypeError(msg)
-        return cast("RowT", data)
+        return self._row_type(**data)
 
 
 class Sql:
@@ -64,8 +69,14 @@ class Sql:
         /,
         **values: object,
     ) -> Cursor[object]:
-        if isinstance(query, str) and values:
-            query = Query(query)
         if isinstance(query, Query):
-            query = query.render(**values)
-        return Cursor(self._sql.exec(query))
+            return Cursor(
+                cursor=self._sql.exec(query.render(**values)),
+                row_type=query.row_type,
+            )
+        if values:
+            query = Query(query).render(**values)
+        return Cursor[dict[str, str]](
+            cursor=self._sql.exec(query),
+            row_type=dict,
+        )
