@@ -77,7 +77,7 @@ class _VariableRow(TypedDict):
 
 
 _SELECT_VARIABLES = Query(
-    source="SELECT key, value FROM __variables__",
+    sql="SELECT key, value FROM __variables__",
     row_type=_VariableRow,
 )
 

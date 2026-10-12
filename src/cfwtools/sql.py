@@ -45,39 +45,39 @@ class Query[RowT = dict[str, str]]:
     @overload
     def __init__(
         self: "Query[dict[str, str]]",
-        source: str,
+        sql: str,
     ) -> None: ...
 
     @overload
     def __init__(
         self,
-        source: str,
+        sql: str,
         row_type: Callable[..., RowT],
     ) -> None: ...
 
     def __init__(
         self,
-        source: str,
+        sql: str,
         row_type: Callable[..., Any] = dict,
     ) -> None:
         self._row_type: Final[Callable[..., RowT]] = row_type
-        self._query: Final[Template | str]
+        self._sql: Final[Template | str]
         self._variables: Final[frozenset[str]]
-        if any(marker in source for marker in _JINJA_MARKERS):
-            ast = JINJA_ENV.parse(source)
-            self._query = JINJA_ENV.from_string(ast)
+        if any(marker in sql for marker in _JINJA_MARKERS):
+            ast = JINJA_ENV.parse(sql)
+            self._sql = JINJA_ENV.from_string(ast)
             self._variables = frozenset(meta.find_undeclared_variables(ast))
         else:
-            self._query = source
+            self._sql = sql
             self._variables = frozenset()
 
     def render(self, **values: object) -> str:
         if unexpected := values.keys() - self._variables:
             msg = f"Unexpected query values: {', '.join(sorted(unexpected))}"
             raise TypeError(msg)
-        if isinstance(self._query, str):
-            return self._query
-        return self._query.render(**values)
+        if isinstance(self._sql, str):
+            return self._sql
+        return self._sql.render(**values)
 
     def __call__(
         self,
