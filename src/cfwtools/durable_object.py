@@ -11,14 +11,13 @@ import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Mapping
 from functools import cached_property, wraps
-from typing import Any, Concatenate, Protocol
+from typing import Any, Concatenate, Protocol, TypedDict
 
 from workers import DurableObject as _DurableObject
 from workers import env
 
 from cfwtools._utils import to_py
-from cfwtools.sql import Sql, SqlStorage
-from cfwtools.template import template
+from cfwtools.sql import Query, Sql, SqlStorage
 
 
 class DurableObjectStorage(Protocol):
@@ -71,7 +70,18 @@ CREATE TABLE IF NOT EXISTS __variables__ (
 );
 """
 
-_UPDATE_VARIABLES = template("""
+
+class _VariableRow(TypedDict):
+    key: str
+    value: str
+
+
+_SELECT_VARIABLES = Query(
+    sql="SELECT key, value FROM __variables__",
+    row_type=_VariableRow,
+)
+
+_UPDATE_VARIABLES = Query("""
 INSERT OR REPLACE INTO __variables__ (key, value)
 VALUES ({{ key | r }}, {{ value | r }});
 """)
@@ -84,7 +94,7 @@ class _Variables:
         self._mapping: dict[type[Variable[Any]], Variable[Any]] = {}
 
         variable_mapping = {t.key_str(): t for t in variable_types}
-        for row in self._sql("SELECT key, value FROM __variables__"):
+        for row in self._sql(_SELECT_VARIABLES):
             key, value = row["key"], row["value"]
             if key not in variable_mapping:
                 continue
