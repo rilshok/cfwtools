@@ -1,9 +1,9 @@
 [project]
 name = "cfwtools"
-version = "0.2.4"
+version = "0.3.0"
 description = "Cloudflare's Python Worker Development Tools"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "jinja2",
 ]
