@@ -7,7 +7,7 @@ __all__ = [
 from collections.abc import Callable, Iterator
 from typing import Any, Final, Protocol, overload
 
-from jinja2 import Environment, StrictUndefined, Template, Undefined
+from jinja2 import Environment, StrictUndefined, Template, Undefined, meta
 
 from cfwtools._utils import to_py
 
@@ -61,13 +61,20 @@ class Query[RowT = dict[str, str]]:
         row_type: Callable[..., Any] = dict,
     ) -> None:
         self._row_type: Final[Callable[..., RowT]] = row_type
-        self._query: Final[Template | str] = (
-            JINJA_ENV.from_string(source)
-            if any(marker in source for marker in _JINJA_MARKERS)
-            else source
-        )
+        self._query: Final[Template | str]
+        self._variables: Final[frozenset[str]]
+        if any(marker in source for marker in _JINJA_MARKERS):
+            ast = JINJA_ENV.parse(source)
+            self._query = JINJA_ENV.from_string(ast)
+            self._variables = frozenset(meta.find_undeclared_variables(ast))
+        else:
+            self._query = source
+            self._variables = frozenset()
 
     def render(self, **values: object) -> str:
+        if unexpected := values.keys() - self._variables:
+            msg = f"Unexpected query values: {', '.join(sorted(unexpected))}"
+            raise TypeError(msg)
         if isinstance(self._query, str):
             return self._query
         return self._query.render(**values)
