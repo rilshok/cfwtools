@@ -6,7 +6,6 @@ __all__ = [
     "Variable",
     "Variables",
     "do",
-    "template",
     "transactional",
 ]
 
@@ -19,4 +18,4 @@ from .durable_object import (
     transactional,
 )
 from .sql import Sql
-from .template import Query, template
+from .template import Query

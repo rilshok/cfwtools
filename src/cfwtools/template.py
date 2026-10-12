@@ -1,6 +1,5 @@
 __all__ = [
     "Query",
-    "template",
 ]
 
 from jinja2 import Environment, StrictUndefined, Undefined
@@ -27,8 +26,3 @@ class Query[RowT = dict[str, str]]:
 
     def render(self, **values: object) -> str:
         return self._template.render(**values)
-
-
-def template(source: str) -> Query:
-    """Create a Jinja2 template from a source string with strict undefined handling."""
-    return Query(source)

@@ -7,8 +7,6 @@ __all__ = [
 from collections.abc import Iterator
 from typing import Protocol, Self, cast, overload
 
-from jinja2 import Template
-
 from cfwtools._utils import to_py
 from cfwtools.template import Query
 
@@ -55,19 +53,19 @@ class Sql:
     @overload
     def __call__(
         self,
-        query: str | Template,
+        query: str,
         /,
         **values: object,
     ) -> Cursor[dict[str, str]]: ...
 
     def __call__(
         self,
-        query: Query[object] | str | Template,
+        query: Query[object] | str,
         /,
         **values: object,
     ) -> Cursor[object]:
         if isinstance(query, str) and values:
             query = Query(query)
-        if not isinstance(query, str):
+        if isinstance(query, Query):
             query = query.render(**values)
         return Cursor(self._sql.exec(query))
